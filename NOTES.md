@@ -44,12 +44,12 @@ I verified the dashboard with both successful and failed Jenkins builds.
 
 ### Screenshots and Logs
 
-* Successful Jenkins build: `screenshots/Screenshot-green-build-jenkins.png`
-* Failed Jenkins build: `screenshots/Screenshot-red-build-jenkins.png`
-* Successful build with Grafana dashboard: `screenshots/Screenshot-green-build-grafana-dashboard.png`
-* Failed build with Grafana dashboard: `screenshots/Screenshot-red-build-grafana-dashboard.png`
-* Failed build logs (#15): `screenshots/logs/#15.txt`
-* Successful build logs (#16): `screenshots/logs/#16.txt`
+* [Successful Jenkins build](screenshots/Screenshot-green-build-jenkins.png)
+* [Failed Jenkins build](screenshots/Screenshot-red-build-jenkins.png)
+* [Successful build with Grafana dashboard](screenshots/Screenshot-green-build-grafana-dashboard.png)
+* [Failed build with Grafana dashboard](screenshots/Screenshot-red-build-grafana-dashboard.png)
+* Failed build logs: [#15.txt](screenshots/logs/%2315.txt)
+* Successful build logs: [#16.txt](screenshots/logs/%2316.txt)
 
 ---
 
