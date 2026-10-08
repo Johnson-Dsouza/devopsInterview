@@ -17,8 +17,7 @@ def test_health(client):
 
 def test_add_returns_ok(client):
     resp = client.get("/add?a=2&b=3")
-    assert resp.status_code == 201
-
+    assert resp.status_code == 200
 
 def test_add_integers(client):
     resp = client.get("/add?a=2&b=3")
