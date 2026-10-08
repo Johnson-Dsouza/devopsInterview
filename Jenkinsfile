@@ -27,6 +27,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mkdir -p reports'
+                sh 'pip3 install --break-system-packages -r app/requirements.txt'
                 sh 'pytest --junitxml=reports/junit.xml'
             }
 
