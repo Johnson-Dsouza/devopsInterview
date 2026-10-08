@@ -1,0 +1,170 @@
+Started by an SCM change
+Obtained Jenkinsfile from git /repo
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/jenkins_home/workspace/devopsInterview
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository /repo
+ > git init /var/jenkins_home/workspace/devopsInterview # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url /repo # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision cbb59a1fcfd8f9bb966d41c511e2b7b7493ea493 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f cbb59a1fcfd8f9bb966d41c511e2b7b7493ea493 # timeout=10
+Commit message: "Create temporary failed build for Task 2 evidence"
+ > git rev-list --no-walk 43a52ee410afa045204e087354bd532533d0a639 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] timeout
+Timeout set to expire in 10 min
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/devopsInterview/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url /repo # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision cbb59a1fcfd8f9bb966d41c511e2b7b7493ea493 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f cbb59a1fcfd8f9bb966d41c511e2b7b7493ea493 # timeout=10
+Commit message: "Create temporary failed build for Task 2 evidence"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Lint)
+[Pipeline] sh
++ flake8 app/
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] sh
++ mkdir -p reports
+[Pipeline] sh
++ pip3 install --break-system-packages -r app/requirements.txt
+Requirement already satisfied: flask==3.0.3 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 1)) (3.0.3)
+Requirement already satisfied: pytest==8.3.3 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 2)) (8.3.3)
+Requirement already satisfied: flake8==7.1.1 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 3)) (7.1.1)
+Requirement already satisfied: Werkzeug>=3.0.0 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (3.1.9)
+Requirement already satisfied: Jinja2>=3.1.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (3.1.6)
+Requirement already satisfied: itsdangerous>=2.1.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (2.2.0)
+Requirement already satisfied: click>=8.1.3 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (8.5.0)
+Requirement already satisfied: blinker>=1.6.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (1.9.0)
+Requirement already satisfied: iniconfig in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (2.3.1)
+Requirement already satisfied: packaging in /usr/lib/python3/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (25.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (1.6.0)
+Requirement already satisfied: mccabe<0.8.0,>=0.7.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (0.7.0)
+Requirement already satisfied: pycodestyle<2.13.0,>=2.12.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (2.12.1)
+Requirement already satisfied: pyflakes<3.3.0,>=3.2.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (3.2.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.13/dist-packages (from Jinja2>=3.1.2->flask==3.0.3->-r app/requirements.txt (line 1)) (3.0.4)
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Pipeline] sh
++ pytest --junitxml=reports/junit.xml
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-8.3.3, pluggy-1.6.0
+rootdir: /var/jenkins_home/workspace/devopsInterview
+configfile: pytest.ini
+testpaths: tests
+collected 6 items
+
+tests/test_main.py .....F                                                [100%]
+
+=================================== FAILURES ===================================
+________________________ test_task2_intentional_failure ________________________
+
+    def test_task2_intentional_failure():
+>       assert False
+E       assert False
+
+tests/test_main.py:37: AssertionError
+- generated xml file: /var/jenkins_home/workspace/devopsInterview/reports/junit.xml -
+=========================== short test summary info ============================
+FAILED tests/test_main.py::test_task2_intentional_failure - assert False
+========================= 1 failed, 5 passed in 0.10s ==========================
+Post stage
+[Pipeline] junit
+Recording test results
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+Stage "Build" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Smoke test)
+Stage "Smoke test" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] fileExists
+[Pipeline] readFile
+[Pipeline] echo
+========================================
+[Pipeline] echo
+Pipeline Metrics
+[Pipeline] echo
+========================================
+[Pipeline] echo
+pipeline_build_status=0
+[Pipeline] echo
+pipeline_build_duration_seconds=2.547
+[Pipeline] echo
+pipeline_tests_passed=5
+[Pipeline] echo
+pipeline_tests_failed=1
+[Pipeline] echo
+========================================
+[Pipeline] sh
++ cat
++ curl --fail --data-binary @- http://pushgateway:9091/metrics/job/interview_pipeline
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   263    0     0  100   263      0    98k --:--:-- --:--:-- --:--:--  128k
+[Pipeline] echo
+Metrics successfully pushed to Pushgateway.
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] sh
++ docker rm -f interview-app-15
+[Pipeline] deleteDir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // timeout
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

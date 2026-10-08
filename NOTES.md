@@ -4,31 +4,29 @@
 
 This exercise covers Jenkins CI pipeline setup and Grafana monitoring.
 
-I focused on completing the required tasks and verifying the pipeline with both successful and failed builds.
+I completed the required tasks and verified the pipeline using both successful and failed builds.
 
 ---
 
 ## Task 1 – Jenkins Pipeline
 
-I created a `Jenkinsfile` for the CI pipeline.
+I created a `Jenkinsfile` with the following stages:
 
-The pipeline includes:
-
-* Checkout source code
-* Install dependencies
-* Run lint
-* Run tests
-* Show the build result
+* Checkout
+* Lint using `flake8`
+* Test using `pytest`
+* Publish JUnit test results
+* Build Docker image
+* Smoke test
+* Cleanup
 
 ### Broken Test Fix
 
-There was a broken test in the application.
+One test was initially failing because it expected HTTP status `201`, while the `/add` endpoint correctly returned `200`.
 
-I checked the test failure, identified the issue in the application code, and made the required fix.
+I updated the test to expect `200`. After the fix, all **5 tests passed** and the Jenkins pipeline completed successfully.
 
-After the fix, I ran the Jenkins pipeline again and confirmed that the build was successful.
-
-I also kept screenshots of one failed build and one successful build to show the pipeline behavior before and after the fix.
+The failed build (`#4.txt`) and successful build (`#8.txt`) logs are available in the `screenshots/logs` folder.
 
 ---
 
@@ -36,13 +34,22 @@ I also kept screenshots of one failed build and one successful build to show the
 
 I created a Grafana dashboard to monitor the Jenkins CI pipeline.
 
-The dashboard shows the build information and helps identify successful and failed builds without checking Jenkins manually.
+The dashboard provides a simple view of the build status and makes it easier to identify successful and failed builds.
 
-The dashboard file is:
+Dashboard file:
 
 `monitoring/grafana/dashboards/ci-pipeline.json`
 
-I verified the dashboard using the Jenkins build results.
+I verified the dashboard with both successful and failed Jenkins builds.
+
+### Screenshots and Logs
+
+* Successful Jenkins build: `screenshots/Screenshot-green-build-jenkins.png`
+* Failed Jenkins build: `screenshots/Screenshot-red-build-jenkins.png`
+* Successful build with Grafana dashboard: `screenshots/Screenshot-green-build-grafana-dashboard.png`
+* Failed build with Grafana dashboard: `screenshots/Screenshot-red-build-grafana-dashboard.png`
+* Failed build logs (#15): `screenshots/logs/#15.txt`
+* Successful build logs (#16): `screenshots/logs/#16.txt`
 
 ---
 
@@ -50,9 +57,9 @@ I verified the dashboard using the Jenkins build results.
 
 I kept the implementation simple and focused on the requirements of the exercise.
 
-The Jenkins pipeline is divided into separate stages so that it is easy to identify whether the issue is related to linting or testing.
+The Jenkins pipeline is divided into separate stages so that failures can be easily identified.
 
-Grafana was used to provide a simple visual view of the CI pipeline status.
+Grafana was used to provide a simple visual view of the Jenkins pipeline status.
 
 ---
 
@@ -64,22 +71,19 @@ The README mentioned the following bonus improvements:
 * Add a Grafana alert when the last build fails
 * Run Lint and Test stages in parallel
 
-I did not implement these bonus items due to the available time.
-
-They would be good improvements for a production-ready setup.
+I did not implement these bonus items due to the available time. They could be added as future improvements.
 
 ---
 
 ## What I Would Add for Production
 
-If I had more time, I would add:
+For a production setup, I would consider adding:
 
 * Automatic Grafana dashboard provisioning
 * Grafana alerts for failed builds
-* Notifications through Slack or email
+* Slack or email notifications
 * Parallel execution of independent pipeline stages
-* Test coverage and better test reports
-* Jenkins credential management for secrets
+* Test coverage and improved test reporting
 
 ---
 
@@ -91,4 +95,6 @@ The completed deliverables are:
 * Fix for the broken test
 * `monitoring/grafana/dashboards/ci-pipeline.json`
 * `NOTES.md`
-* Screenshots showing a failed and successful Jenkins build and the Grafana dashboard
+* Screenshots of successful and failed Jenkins builds
+* Grafana dashboard screenshots
+* Jenkins build logs in `screenshots/logs`

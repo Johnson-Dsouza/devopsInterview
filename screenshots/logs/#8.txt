@@ -1,0 +1,165 @@
+Started by user unknown or anonymous
+Obtained Jenkinsfile from git /repo
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/jenkins_home/workspace/devopsInterview
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository /repo
+ > git init /var/jenkins_home/workspace/devopsInterview # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url /repo # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision 834066b5a19ffbb07dfe8ffd39910849f18debb0 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 834066b5a19ffbb07dfe8ffd39910849f18debb0 # timeout=10
+Commit message: "Fix Jenkins smoke test networking"
+ > git rev-list --no-walk e532c380f35fdc256517300a3b2b1bd74757b936 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] timeout
+Timeout set to expire in 10 min
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/devopsInterview/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url /repo # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision 834066b5a19ffbb07dfe8ffd39910849f18debb0 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 834066b5a19ffbb07dfe8ffd39910849f18debb0 # timeout=10
+Commit message: "Fix Jenkins smoke test networking"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Lint)
+[Pipeline] sh
++ flake8 app/
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] sh
++ mkdir -p reports
+[Pipeline] sh
++ pip3 install --break-system-packages -r app/requirements.txt
+Requirement already satisfied: flask==3.0.3 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 1)) (3.0.3)
+Requirement already satisfied: pytest==8.3.3 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 2)) (8.3.3)
+Requirement already satisfied: flake8==7.1.1 in /usr/local/lib/python3.13/dist-packages (from -r app/requirements.txt (line 3)) (7.1.1)
+Requirement already satisfied: Werkzeug>=3.0.0 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (3.1.9)
+Requirement already satisfied: Jinja2>=3.1.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (3.1.6)
+Requirement already satisfied: itsdangerous>=2.1.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (2.2.0)
+Requirement already satisfied: click>=8.1.3 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (8.5.0)
+Requirement already satisfied: blinker>=1.6.2 in /usr/local/lib/python3.13/dist-packages (from flask==3.0.3->-r app/requirements.txt (line 1)) (1.9.0)
+Requirement already satisfied: iniconfig in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (2.3.1)
+Requirement already satisfied: packaging in /usr/lib/python3/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (25.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (1.6.0)
+Requirement already satisfied: mccabe<0.8.0,>=0.7.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (0.7.0)
+Requirement already satisfied: pycodestyle<2.13.0,>=2.12.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (2.12.1)
+Requirement already satisfied: pyflakes<3.3.0,>=3.2.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (3.2.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.13/dist-packages (from Jinja2>=3.1.2->flask==3.0.3->-r app/requirements.txt (line 1)) (3.0.4)
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Pipeline] sh
++ pytest --junitxml=reports/junit.xml
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-8.3.3, pluggy-1.6.0
+rootdir: /var/jenkins_home/workspace/devopsInterview
+configfile: pytest.ini
+testpaths: tests
+collected 5 items
+
+tests/test_main.py .....                                                 [100%]
+
+- generated xml file: /var/jenkins_home/workspace/devopsInterview/reports/junit.xml -
+============================== 5 passed in 0.13s ===============================
+Post stage
+[Pipeline] junit
+Recording test results
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] sh
++ docker build -t interview-app:8 .
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  161.8kB
+Step 1/7 : FROM python:3.12-slim
+ ---> 05cda9777409
+Step 2/7 : WORKDIR /srv
+ ---> Using cache
+ ---> af5e9174c11e
+Step 3/7 : COPY app/requirements.txt .
+ ---> Using cache
+ ---> 59f10c06f220
+Step 4/7 : RUN pip install --no-cache-dir flask==3.0.3
+ ---> Using cache
+ ---> e121546fbe03
+Step 5/7 : COPY app ./app
+ ---> 6f6e10599111
+Step 6/7 : EXPOSE 5000
+ ---> Running in ab0ab19a6ae1
+ ---> Removed intermediate container ab0ab19a6ae1
+ ---> 94b024cae015
+Step 7/7 : CMD ["python", "-m", "app.main"]
+ ---> Running in 3b7c508fa586
+ ---> Removed intermediate container 3b7c508fa586
+ ---> 5526ce00236b
+Successfully built 5526ce00236b
+Successfully tagged interview-app:8
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Smoke test)
+[Pipeline] sh
++ docker run -d --name interview-app-8 -p 5000:5000 interview-app:8
+27b9911396ee82475dc16c433bd97b02747249ce204eedd314a8f4a51132b50b
++ sleep 5
++ curl --fail http://host.docker.internal:5000/health
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    16  100    16    0     0   1664      0 --:--:-- --:--:-- --:--:--  1777
+{"status":"ok"}
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] sh
++ docker rm -f interview-app-8
+interview-app-8
+[Pipeline] deleteDir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // timeout
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

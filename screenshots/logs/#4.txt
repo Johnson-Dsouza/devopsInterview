@@ -1,0 +1,187 @@
+Started by user unknown or anonymous
+Obtained Jenkinsfile from git /repo
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/jenkins_home/workspace/devopsInterview
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository /repo
+ > git init /var/jenkins_home/workspace/devopsInterview # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url /repo # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision c2cc4113d5835e732ee30ea240d060fbfd15663b (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f c2cc4113d5835e732ee30ea240d060fbfd15663b # timeout=10
+Commit message: "Install application dependencies before tests"
+ > git rev-list --no-walk 5cf7e9ce0afd699b31e801a28a940d76a4bd3b75 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] timeout
+Timeout set to expire in 10 min
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/devopsInterview/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url /repo # timeout=10
+Fetching upstream changes from /repo
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- /repo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision c2cc4113d5835e732ee30ea240d060fbfd15663b (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f c2cc4113d5835e732ee30ea240d060fbfd15663b # timeout=10
+Commit message: "Install application dependencies before tests"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Lint)
+[Pipeline] sh
++ flake8 app/
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] sh
++ mkdir -p reports
+[Pipeline] sh
++ pip3 install --break-system-packages -r app/requirements.txt
+Collecting flask==3.0.3 (from -r app/requirements.txt (line 1))
+  Downloading flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)
+Collecting pytest==8.3.3 (from -r app/requirements.txt (line 2))
+  Downloading pytest-8.3.3-py3-none-any.whl.metadata (7.5 kB)
+Collecting flake8==7.1.1 (from -r app/requirements.txt (line 3))
+  Downloading flake8-7.1.1-py2.py3-none-any.whl.metadata (3.8 kB)
+Collecting Werkzeug>=3.0.0 (from flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+Collecting Jinja2>=3.1.2 (from flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting itsdangerous>=2.1.2 (from flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Collecting click>=8.1.3 (from flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting blinker>=1.6.2 (from flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Requirement already satisfied: iniconfig in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (2.3.1)
+Requirement already satisfied: packaging in /usr/lib/python3/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (25.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /usr/local/lib/python3.13/dist-packages (from pytest==8.3.3->-r app/requirements.txt (line 2)) (1.6.0)
+Requirement already satisfied: mccabe<0.8.0,>=0.7.0 in /usr/local/lib/python3.13/dist-packages (from flake8==7.1.1->-r app/requirements.txt (line 3)) (0.7.0)
+Collecting pycodestyle<2.13.0,>=2.12.0 (from flake8==7.1.1->-r app/requirements.txt (line 3))
+  Downloading pycodestyle-2.12.1-py2.py3-none-any.whl.metadata (4.5 kB)
+Collecting pyflakes<3.3.0,>=3.2.0 (from flake8==7.1.1->-r app/requirements.txt (line 3))
+  Downloading pyflakes-3.2.0-py2.py3-none-any.whl.metadata (3.5 kB)
+Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask==3.0.3->-r app/requirements.txt (line 1))
+  Downloading markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Downloading flask-3.0.3-py3-none-any.whl (101 kB)
+Downloading pytest-8.3.3-py3-none-any.whl (342 kB)
+Downloading flake8-7.1.1-py2.py3-none-any.whl (57 kB)
+Downloading pycodestyle-2.12.1-py2.py3-none-any.whl (31 kB)
+Downloading pyflakes-3.2.0-py2.py3-none-any.whl (62 kB)
+Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (23 kB)
+Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+Installing collected packages: pytest, pyflakes, pycodestyle, MarkupSafe, itsdangerous, click, blinker, Werkzeug, Jinja2, flake8, flask
+  Attempting uninstall: pytest
+    Found existing installation: pytest 9.1.1
+    Uninstalling pytest-9.1.1:
+      Successfully uninstalled pytest-9.1.1
+  Attempting uninstall: pyflakes
+    Found existing installation: pyflakes 4.0.3
+    Uninstalling pyflakes-4.0.3:
+      Successfully uninstalled pyflakes-4.0.3
+  Attempting uninstall: pycodestyle
+    Found existing installation: pycodestyle 2.15.0
+    Uninstalling pycodestyle-2.15.0:
+      Successfully uninstalled pycodestyle-2.15.0
+  Attempting uninstall: flake8
+    Found existing installation: flake8 7.4.1
+    Uninstalling flake8-7.4.1:
+      Successfully uninstalled flake8-7.4.1
+
+Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.4 Werkzeug-3.1.9 blinker-1.9.0 click-8.5.0 flake8-7.1.1 flask-3.0.3 itsdangerous-2.2.0 pycodestyle-2.12.1 pyflakes-3.2.0 pytest-8.3.3
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Pipeline] sh
++ pytest --junitxml=reports/junit.xml
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-8.3.3, pluggy-1.6.0
+rootdir: /var/jenkins_home/workspace/devopsInterview
+configfile: pytest.ini
+testpaths: tests
+collected 5 items
+
+tests/test_main.py .F...                                                 [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_add_returns_ok ______________________________
+
+client = <FlaskClient <Flask 'app.main'>>
+
+    def test_add_returns_ok(client):
+        resp = client.get("/add?a=2&b=3")
+>       assert resp.status_code == 201
+E       assert 200 == 201
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests/test_main.py:20: AssertionError
+- generated xml file: /var/jenkins_home/workspace/devopsInterview/reports/junit.xml -
+=========================== short test summary info ============================
+FAILED tests/test_main.py::test_add_returns_ok - assert 200 == 201
+ +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+========================= 1 failed, 4 passed in 0.08s ==========================
+Post stage
+[Pipeline] junit
+Recording test results
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+Stage "Build" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Smoke test)
+Stage "Smoke test" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] sh
++ docker rm -f interview-app-4
++ true
+[Pipeline] deleteDir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // timeout
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE
