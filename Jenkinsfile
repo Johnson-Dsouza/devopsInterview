@@ -55,7 +55,7 @@ pipeline {
 
                     sleep 5
 
-                    curl --fail http://localhost:5000/health
+                    curl --fail http://host.docker.internal:5000/health
                 '''
             }
         }
