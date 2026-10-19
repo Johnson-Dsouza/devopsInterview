@@ -1,0 +1,8 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Private keys and credentials
+*.pem
+*.key
