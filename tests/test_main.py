@@ -33,8 +33,5 @@ def test_add_rejects_bad_input(client):
     resp = client.get("/add?a=two&b=3")
     assert resp.status_code == 400
 
-
-
-
-# def test_task2_intentional_failure():
-#     assert False   
+def test_task2_intentional_failure():
+    assert False   
