@@ -33,5 +33,10 @@ def test_add_rejects_bad_input(client):
     resp = client.get("/add?a=two&b=3")
     assert resp.status_code == 400
 
-def test_task2_intentional_failure():
-    assert False   
+
+
+# Testing: Intentionally fail a test to verify the Jenkins failure alert in Grafana.
+# Uncomment these lines only when you want to test the failure alert.
+#
+# def test_task2_intentional_failure():
+#     assert False
