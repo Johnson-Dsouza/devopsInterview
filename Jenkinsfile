@@ -21,6 +21,7 @@ pipeline {
 
         stage('Parallel Quality Checks') {
             parallel {
+
                 stage('Lint') {
                     steps {
                         echo 'Running Python lint checks...'
@@ -30,16 +31,37 @@ pipeline {
 
                 stage('Test') {
                     steps {
-                        echo 'Running Python tests...'
+                        echo 'Running Python tests with coverage...'
+
                         sh 'mkdir -p reports'
+
                         sh 'pip3 install --break-system-packages -r app/requirements.txt'
-                        sh 'pytest --junitxml=reports/junit.xml'
+
+                        sh '''
+                            pytest \
+                              --junitxml=reports/junit.xml \
+                              --cov=app \
+                              --cov-report=term-missing \
+                              --cov-report=html:reports/coverage \
+                              --cov-report=xml:reports/coverage.xml
+                        '''
                     }
 
                     post {
                         always {
+                            /*
+                             * Publish JUnit test results.
+                             */
                             junit testResults: 'reports/junit.xml',
                                   allowEmptyResults: true
+
+                            /*
+                             * Archive test and coverage reports.
+                             */
+                            archiveArtifacts(
+                                artifacts: 'reports/**/*',
+                                allowEmptyArchive: true
+                            )
                         }
                     }
                 }
@@ -81,13 +103,13 @@ pipeline {
                     currentBuild.currentResult == 'SUCCESS' ? 1 : 0
 
                 /*
-                 * Jenkins build duration in seconds
+                 * Jenkins build duration in seconds.
                  */
                 def buildDuration =
                     (currentBuild.duration ?: 0) / 1000
 
                 /*
-                 * Default test counts
+                 * Default test counts.
                  */
                 def testsPassed = 0
                 def testsFailed = 0
