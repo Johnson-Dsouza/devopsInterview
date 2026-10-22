@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -62,6 +63,7 @@ pipeline {
     }
 
     post {
+
         always {
             script {
                 /*
@@ -69,12 +71,14 @@ pipeline {
                  * 1 = SUCCESS
                  * 0 = FAILURE
                  */
-                def buildStatus = currentBuild.currentResult == 'SUCCESS' ? 1 : 0
+                def buildStatus =
+                    currentBuild.currentResult == 'SUCCESS' ? 1 : 0
 
                 /*
                  * Jenkins build duration in seconds
                  */
-                def buildDuration = (currentBuild.duration ?: 0) / 1000
+                def buildDuration =
+                    (currentBuild.duration ?: 0) / 1000
 
                 /*
                  * Default test counts
@@ -123,10 +127,6 @@ pipeline {
 
                 /*
                  * Push metrics to Prometheus Pushgateway.
-                 *
-                 * Jenkins and Pushgateway are on the same
-                 * Docker Compose network, so the hostname
-                 * 'pushgateway' can be used.
                  */
                 sh """
                     cat <<EOF | curl --fail --data-binary @- http://pushgateway:9091/metrics/job/interview_pipeline
@@ -158,6 +158,29 @@ EOF
              * Clean Jenkins workspace after every build.
              */
             deleteDir()
+        }
+
+        /*
+         * Send an email whenever the build fails.
+         */
+        failure {
+            emailext(
+                to: 'johnsondsouza2023@gmail.com',
+                subject: "Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Jenkins build failed.
+
+Job: ${env.JOB_NAME}
+Build Number: #${env.BUILD_NUMBER}
+Build Status: ${currentBuild.currentResult}
+
+Build URL:
+${env.BUILD_URL}
+
+Console Output:
+${env.BUILD_URL}console
+"""
+            )
         }
     }
 }
