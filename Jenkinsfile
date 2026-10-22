@@ -19,23 +19,29 @@ pipeline {
             }
         }
 
-        stage('Lint') {
-            steps {
-                sh 'flake8 app/'
-            }
-        }
+        stage('Parallel Quality Checks') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        echo 'Running Python lint checks...'
+                        sh 'flake8 app/'
+                    }
+                }
 
-        stage('Test') {
-            steps {
-                sh 'mkdir -p reports'
-                sh 'pip3 install --break-system-packages -r app/requirements.txt'
-                sh 'pytest --junitxml=reports/junit.xml'
-            }
+                stage('Test') {
+                    steps {
+                        echo 'Running Python tests...'
+                        sh 'mkdir -p reports'
+                        sh 'pip3 install --break-system-packages -r app/requirements.txt'
+                        sh 'pytest --junitxml=reports/junit.xml'
+                    }
 
-            post {
-                always {
-                    junit testResults: 'reports/junit.xml',
-                          allowEmptyResults: true
+                    post {
+                        always {
+                            junit testResults: 'reports/junit.xml',
+                                  allowEmptyResults: true
+                        }
+                    }
                 }
             }
         }
