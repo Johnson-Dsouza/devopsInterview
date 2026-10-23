@@ -15,6 +15,7 @@ pipeline {
         APP_IMAGE = "interview-app:${BUILD_NUMBER}"
         APP_CONTAINER = "interview-app-smoke-${BUILD_NUMBER}"
         PUSHGATEWAY_URL = "http://pushgateway:9091"
+        METRICS_JOB = "interview_pipeline"
     }
 
     stages {
@@ -63,7 +64,7 @@ pipeline {
                             )
 
                             archiveArtifacts(
-                                artifacts: 'reports/coverage.xml',
+                                artifacts: 'reports/**',
                                 allowEmptyArchive: true
                             )
                         }
@@ -86,15 +87,18 @@ pipeline {
                 sh '''
                     set -e
 
+                    docker rm -f "${APP_CONTAINER}" >/dev/null 2>&1 || true
+
                     docker run -d \
                         --name "${APP_CONTAINER}" \
                         -p 18080:5000 \
                         "${APP_IMAGE}"
 
                     for i in $(seq 1 15); do
-                        if curl -fsS http://localhost:18080/health; then
+                        if curl -fsS \
+                            http://host.docker.internal:18080/health; then
                             echo "Smoke test passed"
-                            break
+                            exit 0
                         fi
 
                         if [ "$i" -eq 15 ]; then
@@ -107,16 +111,22 @@ pipeline {
                     done
                 '''
             }
+
+            post {
+                always {
+                    sh '''
+                        docker rm -f "${APP_CONTAINER}" \
+                            >/dev/null 2>&1 || true
+                    '''
+                }
+            }
         }
     }
 
     post {
         always {
             script {
-                /*
-                 * Build status: 1 = SUCCESS, 0 = FAILURE
-                 */
-                def buildStatus =
+                def buildStatusValue =
                     currentBuild.currentResult == 'SUCCESS' ? 1 : 0
 
                 def buildDurationSeconds =
@@ -124,106 +134,99 @@ pipeline {
 
                 def testsPassed = 0
                 def testsFailed = 0
-                def testCoveragePercent = 0.0
+                def testCoverageFraction = '0.0'
 
-                /*
-                 * Read test counts from the JUnit XML report.
-                 */
                 if (fileExists('reports/junit.xml')) {
                     def junitXml = readFile('reports/junit.xml')
 
-                    def testsMatch =
-                        junitXml =~ /tests="([0-9]+)"/
+                    def passedMatch =
+                        junitXml =~ /<testsuite[^>]*\stests="(\d+)"/
 
                     def failuresMatch =
-                        junitXml =~ /failures="([0-9]+)"/
+                        junitXml =~ /<testsuite[^>]*\sfailures="(\d+)"/
 
                     def errorsMatch =
-                        junitXml =~ /errors="([0-9]+)"/
+                        junitXml =~ /<testsuite[^>]*\serrors="(\d+)"/
 
-                    if (testsMatch.find()) {
-                        def totalTests =
-                            testsMatch.group(1).toInteger()
+                    if (passedMatch.find()) {
+                        testsPassed = passedMatch.group(1).toInteger()
+                    }
 
-                        def failures = 0
-                        def errors = 0
+                    if (failuresMatch.find()) {
+                        testsFailed = failuresMatch.group(1).toInteger()
+                    }
 
-                        if (failuresMatch.find()) {
-                            failures =
-                                failuresMatch.group(1).toInteger()
-                        }
-
-                        if (errorsMatch.find()) {
-                            errors =
-                                errorsMatch.group(1).toInteger()
-                        }
-
-                        testsFailed = failures + errors
-                        testsPassed = totalTests - testsFailed
+                    if (errorsMatch.find()) {
+                        testsFailed += errorsMatch.group(1).toInteger()
                     }
                 }
 
-                /*
-                 * Read overall line coverage from coverage.xml.
-                 */
                 if (fileExists('reports/coverage.xml')) {
-                    def coverageXml =
-                        readFile('reports/coverage.xml')
-
+                    def coverageXml = readFile('reports/coverage.xml')
                     def coverageMatch =
                         coverageXml =~ /line-rate="([0-9.]+)"/
 
                     if (coverageMatch.find()) {
-                        testCoveragePercent =
-                            coverageMatch.group(1).toBigDecimal() * 100
+                        testCoverageFraction = coverageMatch.group(1)
                     }
                 }
 
-                echo "pipeline_build_status=${buildStatus}"
-                echo "pipeline_build_duration_seconds=${buildDurationSeconds}"
-                echo "pipeline_tests_passed=${testsPassed}"
-                echo "pipeline_tests_failed=${testsFailed}"
-                echo "pipeline_test_coverage_percent=${testCoveragePercent}"
+                // Calculate coverage using shell awk to avoid
+                // Groovy sandbox restrictions on toBigDecimal().
+                def testCoveragePercent = sh(
+                    script: """
+                        awk 'BEGIN {
+                            printf "%.2f", ${testCoverageFraction} * 100
+                        }'
+                    """,
+                    returnStdout: true
+                ).trim()
 
-                /*
-                 * Publish metrics to Prometheus Pushgateway.
-                 */
-                sh """
-                    cat <<'METRICS' | wget -q --post-file=- \
-                        --header="Content-Type: text/plain" \
-                        "${PUSHGATEWAY_URL}/metrics/job/interview_pipeline"
+                echo "Build status: ${buildStatusValue}"
+                echo "Build duration: ${buildDurationSeconds}"
+                echo "Tests passed: ${testsPassed}"
+                echo "Tests failed: ${testsFailed}"
+                echo "Test coverage: ${testCoveragePercent}%"
 
-                    # TYPE pipeline_build_status gauge
-                    pipeline_build_status ${buildStatus}
+                def metricsPayload = """
+pipeline_build_status{job="${METRICS_JOB}"} ${buildStatusValue}
+pipeline_build_duration_seconds{job="${METRICS_JOB}"} ${buildDurationSeconds}
+pipeline_tests_passed{job="${METRICS_JOB}"} ${testsPassed}
+pipeline_tests_failed{job="${METRICS_JOB}"} ${testsFailed}
+pipeline_test_coverage_percent{job="${METRICS_JOB}"} ${testCoveragePercent}
+""".trim() + "\n"
 
-                    # TYPE pipeline_build_duration_seconds gauge
-                    pipeline_build_duration_seconds ${buildDurationSeconds}
+                writeFile(
+                    file: 'reports/pipeline-metrics.txt',
+                    text: metricsPayload
+                )
 
-                    # TYPE pipeline_tests_passed gauge
-                    pipeline_tests_passed ${testsPassed}
+                archiveArtifacts(
+                    artifacts: 'reports/pipeline-metrics.txt',
+                    allowEmptyArchive: true
+                )
 
-                    # TYPE pipeline_tests_failed gauge
-                    pipeline_tests_failed ${testsFailed}
+                // Push metrics even if a previous pipeline stage failed.
+                withEnv(["METRICS_PAYLOAD=${metricsPayload}"]) {
+                    sh '''
+                        set +e
 
-                    # TYPE pipeline_test_coverage_percent gauge
-                    pipeline_test_coverage_percent ${testCoveragePercent}
-                    METRICS
-                """
+                        printf '%s' "$METRICS_PAYLOAD" |
+                            curl --silent --show-error \
+                                --fail \
+                                --data-binary @- \
+                                "${PUSHGATEWAY_URL}/metrics/job/${METRICS_JOB}"
 
-                echo 'Metrics successfully pushed to Pushgateway.'
+                        RESULT=$?
+
+                        if [ "$RESULT" -ne 0 ]; then
+                            echo "WARNING: Could not push metrics to Pushgateway"
+                        fi
+
+                        exit 0
+                    '''
+                }
             }
-
-            /*
-             * Remove the smoke-test container.
-             */
-            sh '''
-                docker rm -f "${APP_CONTAINER}" 2>/dev/null || true
-            '''
-
-            /*
-             * Clean the Jenkins workspace.
-             */
-            deleteDir()
         }
 
         success {
@@ -231,22 +234,26 @@ pipeline {
         }
 
         failure {
+            echo 'Pipeline failed. Sending Jenkins email notification.'
+
             emailext(
                 to: 'johnsondsouza2023@gmail.com',
-                subject: "Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-Jenkins build failed.
+                subject: "Jenkins FAILURE: ${JOB_NAME} #${BUILD_NUMBER}",
+                body: """Hello,
 
-Job: ${env.JOB_NAME}
-Build Number: #${env.BUILD_NUMBER}
-Build Status: ${currentBuild.currentResult}
+The Jenkins pipeline has failed.
 
-Build URL:
-${env.BUILD_URL}
+Job: ${JOB_NAME}
+Build Number: #${BUILD_NUMBER}
+Status: ${BUILD_STATUS}
+Build URL: ${BUILD_URL}
 
-Console Output:
-${env.BUILD_URL}console
-"""
+Please check the Jenkins console output to identify the failure.
+
+Regards,
+Jenkins
+""",
+                attachLog: false
             )
         }
 
