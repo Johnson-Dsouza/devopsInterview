@@ -85,18 +85,30 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh '''
-                    set -e
+                    set -eu
 
-                    docker rm -f "${APP_CONTAINER}" >/dev/null 2>&1 || true
+                    docker rm -f "${APP_CONTAINER}" \
+                        >/dev/null 2>&1 || true
 
-                    docker run -d \
+                    # Publish container port 5000 on an available host port.
+                    docker run -d -P \
                         --name "${APP_CONTAINER}" \
-                        -p 18080:5000 \
                         "${APP_IMAGE}"
+
+                    HOST_PORT=$(docker port "${APP_CONTAINER}" 5000/tcp |
+                        head -n 1 | awk -F: '{print $NF}')
+
+                    if [ -z "$HOST_PORT" ]; then
+                        echo "Could not determine the mapped host port"
+                        docker logs "${APP_CONTAINER}" || true
+                        exit 1
+                    fi
+
+                    echo "Testing application on port ${HOST_PORT}"
 
                     for i in $(seq 1 15); do
                         if curl -fsS \
-                            http://host.docker.internal:18080/health; then
+                            "http://host.docker.internal:${HOST_PORT}/health"; then
                             echo "Smoke test passed"
                             exit 0
                         fi
@@ -136,6 +148,7 @@ pipeline {
                 def testsFailed = 0
                 def testCoverageFraction = '0.0'
 
+                // Read JUnit test results.
                 if (fileExists('reports/junit.xml')) {
                     def junitXml = readFile('reports/junit.xml')
 
@@ -161,8 +174,10 @@ pipeline {
                     }
                 }
 
+                // Read coverage fraction from coverage.xml.
                 if (fileExists('reports/coverage.xml')) {
                     def coverageXml = readFile('reports/coverage.xml')
+
                     def coverageMatch =
                         coverageXml =~ /line-rate="([0-9.]+)"/
 
@@ -171,8 +186,7 @@ pipeline {
                     }
                 }
 
-                // Calculate coverage using shell awk to avoid
-                // Groovy sandbox restrictions on toBigDecimal().
+                // Use awk to avoid Groovy sandbox restrictions.
                 def testCoveragePercent = sh(
                     script: """
                         awk 'BEGIN {
@@ -206,7 +220,7 @@ pipeline_test_coverage_percent{job="${METRICS_JOB}"} ${testCoveragePercent}
                     allowEmptyArchive: true
                 )
 
-                // Push metrics even if a previous pipeline stage failed.
+                // Push metrics without masking the original build result.
                 withEnv(["METRICS_PAYLOAD=${metricsPayload}"]) {
                     sh '''
                         set +e
@@ -245,7 +259,7 @@ The Jenkins pipeline has failed.
 
 Job: ${JOB_NAME}
 Build Number: #${BUILD_NUMBER}
-Status: ${BUILD_STATUS}
+Status: ${currentBuild.currentResult}
 Build URL: ${BUILD_URL}
 
 Please check the Jenkins console output to identify the failure.
