@@ -11,8 +11,13 @@ pipeline {
         pollSCM('H/2 * * * *')
     }
 
-    stages {
+    environment {
+        APP_IMAGE = "interview-app:${BUILD_NUMBER}"
+        APP_CONTAINER = "interview-app-smoke-${BUILD_NUMBER}"
+        PUSHGATEWAY_URL = "http://pushgateway:9091"
+    }
 
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm
@@ -21,46 +26,44 @@ pipeline {
 
         stage('Parallel Quality Checks') {
             parallel {
-
                 stage('Lint') {
                     steps {
-                        echo 'Running Python lint checks...'
-                        sh 'flake8 app/'
+                        sh '''
+                            set -e
+                            python3 -m flake8 app/
+                        '''
                     }
                 }
 
                 stage('Test') {
                     steps {
-                        echo 'Running Python tests with coverage...'
-
-                        sh 'mkdir -p reports'
-
-                        sh 'pip3 install --break-system-packages -r app/requirements.txt'
-
                         sh '''
-                            pytest \
-                              --junitxml=reports/junit.xml \
-                              --cov=app \
-                              --cov-fail-under=90 \
-                              --cov-report=term-missing \
-                              --cov-report=html:reports/coverage \
-                              --cov-report=xml:reports/coverage.xml
+                            set -e
+
+                            python3 -m pip install \
+                                --break-system-packages \
+                                -r app/requirements.txt
+
+                            mkdir -p reports
+
+                            python3 -m pytest \
+                                --junitxml=reports/junit.xml \
+                                --cov=app \
+                                --cov-report=term-missing \
+                                --cov-report=xml:reports/coverage.xml \
+                                --cov-fail-under=90
                         '''
                     }
 
                     post {
                         always {
-                            /*
-                             * Publish JUnit test results.
-                             */
-                            junit testResults: 'reports/junit.xml',
-                                  allowEmptyResults: true
+                            junit(
+                                testResults: 'reports/junit.xml',
+                                allowEmptyResults: true
+                            )
 
-                            /*
-                             * Archive test and coverage reports.
-                             */
                             archiveArtifacts(
-                                artifacts: 'reports/**/*',
+                                artifacts: 'reports/coverage.xml',
                                 allowEmptyArchive: true
                             )
                         }
@@ -71,127 +74,162 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'docker build -t interview-app:${BUILD_NUMBER} .'
+                sh '''
+                    set -e
+                    docker build -t "${APP_IMAGE}" .
+                '''
             }
         }
 
-        stage('Smoke test') {
+        stage('Smoke Test') {
             steps {
                 sh '''
+                    set -e
+
                     docker run -d \
-                      --name interview-app-${BUILD_NUMBER} \
-                      -p 5000:5000 \
-                      interview-app:${BUILD_NUMBER}
+                        --name "${APP_CONTAINER}" \
+                        -p 18080:5000 \
+                        "${APP_IMAGE}"
 
-                    sleep 5
+                    for i in $(seq 1 15); do
+                        if curl -fsS http://localhost:18080/health; then
+                            echo "Smoke test passed"
+                            break
+                        fi
 
-                    curl --fail http://host.docker.internal:5000/health
+                        if [ "$i" -eq 15 ]; then
+                            echo "Smoke test failed"
+                            docker logs "${APP_CONTAINER}" || true
+                            exit 1
+                        fi
+
+                        sleep 2
+                    done
                 '''
             }
         }
     }
 
     post {
-
         always {
             script {
                 /*
-                 * Build status:
-                 * 1 = SUCCESS
-                 * 0 = FAILURE
+                 * Build status: 1 = SUCCESS, 0 = FAILURE
                  */
                 def buildStatus =
                     currentBuild.currentResult == 'SUCCESS' ? 1 : 0
 
-                /*
-                 * Jenkins build duration in seconds.
-                 */
-                def buildDuration =
-                    (currentBuild.duration ?: 0) / 1000
+                def buildDurationSeconds =
+                    currentBuild.duration / 1000.0
 
-                /*
-                 * Default test counts.
-                 */
                 def testsPassed = 0
                 def testsFailed = 0
+                def testCoveragePercent = 0.0
 
                 /*
-                 * Read JUnit test results if the report exists.
+                 * Read test counts from the JUnit XML report.
                  */
                 if (fileExists('reports/junit.xml')) {
-
                     def junitXml = readFile('reports/junit.xml')
 
-                    def testsMatch = junitXml =~ /tests="([0-9]+)"/
-                    def failuresMatch = junitXml =~ /failures="([0-9]+)"/
-                    def errorsMatch = junitXml =~ /errors="([0-9]+)"/
+                    def testsMatch =
+                        junitXml =~ /tests="([0-9]+)"/
 
-                    def totalTests = testsMatch.find()
-                            ? testsMatch.group(1).toInteger()
-                            : 0
+                    def failuresMatch =
+                        junitXml =~ /failures="([0-9]+)"/
 
-                    def failures = failuresMatch.find()
-                            ? failuresMatch.group(1).toInteger()
-                            : 0
+                    def errorsMatch =
+                        junitXml =~ /errors="([0-9]+)"/
 
-                    def errors = errorsMatch.find()
-                            ? errorsMatch.group(1).toInteger()
-                            : 0
+                    if (testsMatch.find()) {
+                        def totalTests =
+                            testsMatch.group(1).toInteger()
 
-                    testsFailed = failures + errors
-                    testsPassed = totalTests - testsFailed
+                        def failures = 0
+                        def errors = 0
+
+                        if (failuresMatch.find()) {
+                            failures =
+                                failuresMatch.group(1).toInteger()
+                        }
+
+                        if (errorsMatch.find()) {
+                            errors =
+                                errorsMatch.group(1).toInteger()
+                        }
+
+                        testsFailed = failures + errors
+                        testsPassed = totalTests - testsFailed
+                    }
                 }
 
                 /*
-                 * Display metrics in Jenkins console.
+                 * Read overall line coverage from coverage.xml.
                  */
-                echo "========================================"
-                echo "Pipeline Metrics"
-                echo "========================================"
+                if (fileExists('reports/coverage.xml')) {
+                    def coverageXml =
+                        readFile('reports/coverage.xml')
+
+                    def coverageMatch =
+                        coverageXml =~ /line-rate="([0-9.]+)"/
+
+                    if (coverageMatch.find()) {
+                        testCoveragePercent =
+                            coverageMatch.group(1).toBigDecimal() * 100
+                    }
+                }
+
                 echo "pipeline_build_status=${buildStatus}"
-                echo "pipeline_build_duration_seconds=${buildDuration}"
+                echo "pipeline_build_duration_seconds=${buildDurationSeconds}"
                 echo "pipeline_tests_passed=${testsPassed}"
                 echo "pipeline_tests_failed=${testsFailed}"
-                echo "========================================"
+                echo "pipeline_test_coverage_percent=${testCoveragePercent}"
 
                 /*
-                 * Push metrics to Prometheus Pushgateway.
+                 * Publish metrics to Prometheus Pushgateway.
                  */
                 sh """
-                    cat <<EOF | curl --fail --data-binary @- http://pushgateway:9091/metrics/job/interview_pipeline
-# TYPE pipeline_build_status gauge
-pipeline_build_status ${buildStatus}
+                    cat <<'METRICS' | wget -q --post-file=- \
+                        --header="Content-Type: text/plain" \
+                        "${PUSHGATEWAY_URL}/metrics/job/interview_pipeline"
 
-# TYPE pipeline_build_duration_seconds gauge
-pipeline_build_duration_seconds ${buildDuration}
+                    # TYPE pipeline_build_status gauge
+                    pipeline_build_status ${buildStatus}
 
-# TYPE pipeline_tests_passed gauge
-pipeline_tests_passed ${testsPassed}
+                    # TYPE pipeline_build_duration_seconds gauge
+                    pipeline_build_duration_seconds ${buildDurationSeconds}
 
-# TYPE pipeline_tests_failed gauge
-pipeline_tests_failed ${testsFailed}
-EOF
+                    # TYPE pipeline_tests_passed gauge
+                    pipeline_tests_passed ${testsPassed}
+
+                    # TYPE pipeline_tests_failed gauge
+                    pipeline_tests_failed ${testsFailed}
+
+                    # TYPE pipeline_test_coverage_percent gauge
+                    pipeline_test_coverage_percent ${testCoveragePercent}
+                    METRICS
                 """
 
-                echo "Metrics successfully pushed to Pushgateway."
+                echo 'Metrics successfully pushed to Pushgateway.'
             }
 
             /*
-             * Remove the application container if it exists.
+             * Remove the smoke-test container.
              */
             sh '''
-                docker rm -f interview-app-${BUILD_NUMBER} 2>/dev/null || true
+                docker rm -f "${APP_CONTAINER}" 2>/dev/null || true
             '''
 
             /*
-             * Clean Jenkins workspace after every build.
+             * Clean the Jenkins workspace.
              */
             deleteDir()
         }
 
-        /*
-         * Send an email whenever the build fails.
-         */
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+
         failure {
             emailext(
                 to: 'johnsondsouza2023@gmail.com',
@@ -210,6 +248,10 @@ Console Output:
 ${env.BUILD_URL}console
 """
             )
+        }
+
+        cleanup {
+            echo 'Pipeline cleanup completed.'
         }
     }
 }
