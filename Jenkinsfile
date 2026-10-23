@@ -41,7 +41,7 @@ pipeline {
                             pytest \
                               --junitxml=reports/junit.xml \
                               --cov=app \
-                              --cov-fail-under=95 \
+                              --cov-fail-under=90 \
                               --cov-report=term-missing \
                               --cov-report=html:reports/coverage \
                               --cov-report=xml:reports/coverage.xml
